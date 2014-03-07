@@ -155,10 +155,10 @@ inline ostream& operator<<(ostream& out, Mutation &mut)
  * mostly information about locks held, so that we can drop them all
  * the request is finished or forwarded.  see request_*().
  */
-struct MDRequest : public Mutation {
+struct MDRequestImpl : public Mutation {
   int ref;
   Session *session;
-  elist<MDRequest*>::item item_session_request;  // if not on list, op is aborted.
+  elist<MDRequestImpl*>::item item_session_request;  // if not on list, op is aborted.
 
   // -- i am a client (master) request
   MClientRequest *client_request; // client request (if any)
@@ -251,7 +251,7 @@ struct MDRequest : public Mutation {
 
 
   // ---------------------------------------------------
-  MDRequest() : 
+  MDRequestImpl() :
     ref(1),
     session(0), item_session_request(this),
     client_request(0), straydn(NULL), snapid(CEPH_NOSNAP), tracei(0), tracedn(0),
@@ -265,7 +265,7 @@ struct MDRequest : public Mutation {
     _more(0) {
     in[0] = in[1] = 0; 
   }
-  MDRequest(metareqid_t ri, __u32 attempt, MClientRequest *req) : 
+  MDRequestImpl(metareqid_t ri, __u32 attempt, MClientRequest *req) :
     Mutation(ri, attempt),
     ref(1),
     session(0), item_session_request(this),
@@ -280,7 +280,7 @@ struct MDRequest : public Mutation {
     _more(0) {
     in[0] = in[1] = 0; 
   }
-  MDRequest(metareqid_t ri, __u32 attempt, int by) : 
+  MDRequestImpl(metareqid_t ri, __u32 attempt, int by) :
     Mutation(ri, attempt, by),
     ref(1),
     session(0), item_session_request(this),
@@ -295,16 +295,7 @@ struct MDRequest : public Mutation {
     _more(0) {
     in[0] = in[1] = 0; 
   }
-  ~MDRequest();
-
-  MDRequest *get() {
-    ++ref;
-    return this;
-  }
-  void put() {
-    if (--ref == 0)
-      delete this;
-  }
+  ~MDRequestImpl();
   
   More* more();
   bool has_more();
@@ -320,7 +311,11 @@ struct MDRequest : public Mutation {
   void clear_ambiguous_auth();
 
   void print(ostream &out);
+
+
 };
+
+typedef ceph::shared_ptr<MDRequestImpl> MDRequestRef;
 
 
 struct MDSlaveUpdate {
