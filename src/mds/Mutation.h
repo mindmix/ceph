@@ -156,7 +156,7 @@ inline ostream& operator<<(ostream& out, Mutation &mut)
  * the request is finished or forwarded.  see request_*().
  */
 struct MDRequestImpl : public Mutation {
-  int ref;
+  ceph::weak_ptr<MDRequestImpl> self_ref;
   Session *session;
   elist<MDRequestImpl*>::item item_session_request;  // if not on list, op is aborted.
 
@@ -252,7 +252,7 @@ struct MDRequestImpl : public Mutation {
 
   // ---------------------------------------------------
   MDRequestImpl() :
-    ref(1),
+    self_ref(),
     session(0), item_session_request(this),
     client_request(0), straydn(NULL), snapid(CEPH_NOSNAP), tracei(0), tracedn(0),
     alloc_ino(0), used_prealloc_ino(0), snap_caps(0), did_early_reply(false),
@@ -266,8 +266,8 @@ struct MDRequestImpl : public Mutation {
     in[0] = in[1] = 0; 
   }
   MDRequestImpl(metareqid_t ri, __u32 attempt, MClientRequest *req) :
+    self_ref(),
     Mutation(ri, attempt),
-    ref(1),
     session(0), item_session_request(this),
     client_request(req), straydn(NULL), snapid(CEPH_NOSNAP), tracei(0), tracedn(0),
     alloc_ino(0), used_prealloc_ino(0), snap_caps(0), did_early_reply(false),
@@ -281,8 +281,8 @@ struct MDRequestImpl : public Mutation {
     in[0] = in[1] = 0; 
   }
   MDRequestImpl(metareqid_t ri, __u32 attempt, int by) :
+    self_ref(),
     Mutation(ri, attempt, by),
-    ref(1),
     session(0), item_session_request(this),
     client_request(0), straydn(NULL), snapid(CEPH_NOSNAP), tracei(0), tracedn(0),
     alloc_ino(0), used_prealloc_ino(0), snap_caps(0), did_early_reply(false),
@@ -311,8 +311,9 @@ struct MDRequestImpl : public Mutation {
   void clear_ambiguous_auth();
 
   void print(ostream &out);
-
-
+  void set_self_ref(ceph::shared_ptr<MDRequestImpl>& ref) {
+    self_ref = ref;
+  }
 };
 
 typedef ceph::shared_ptr<MDRequestImpl> MDRequestRef;
