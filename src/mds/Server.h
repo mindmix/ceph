@@ -98,16 +98,16 @@ public:
   // -- requests --
   void handle_client_request(MClientRequest *m);
 
-  void journal_and_reply(MDRequest *mdr, CInode *tracei, CDentry *tracedn, 
+  void journal_and_reply(MDRequestRef& mdr, CInode *tracei, CDentry *tracedn,
 			 LogEvent *le, Context *fin);
-  void dispatch_client_request(MDRequest *mdr);
-  void early_reply(MDRequest *mdr, CInode *tracei, CDentry *tracedn);
-  void reply_request(MDRequest *mdr, int r = 0, CInode *tracei = 0, CDentry *tracedn = 0);
-  void reply_request(MDRequest *mdr, MClientReply *reply, CInode *tracei = 0, CDentry *tracedn = 0);
+  void dispatch_client_request(MDRequestRef& mdr);
+  void early_reply(MDRequestRef& mdr, CInode *tracei, CDentry *tracedn);
+  void reply_request(MDRequestRef& mdr, int r = 0, CInode *tracei = 0, CDentry *tracedn = 0);
+  void reply_request(MDRequestRef& mdr, MClientReply *reply, CInode *tracei = 0, CDentry *tracedn = 0);
   void set_trace_dist(Session *session, MClientReply *reply, CInode *in, CDentry *dn,
 		      snapid_t snapid,
 		      int num_dentries_wanted,
-		      MDRequest *mdr);
+		      MDRequestRef& mdr);
 
   void encode_empty_dirstat(bufferlist& bl);
   void encode_infinite_lease(bufferlist& bl);
@@ -115,12 +115,12 @@ public:
 
   void handle_slave_request(MMDSSlaveRequest *m);
   void handle_slave_request_reply(MMDSSlaveRequest *m);
-  void dispatch_slave_request(MDRequest *mdr);
-  void handle_slave_auth_pin(MDRequest *mdr);
-  void handle_slave_auth_pin_ack(MDRequest *mdr, MMDSSlaveRequest *ack);
+  void dispatch_slave_request(MDRequestRef& mdr);
+  void handle_slave_auth_pin(MDRequestRef& mdr);
+  void handle_slave_auth_pin_ack(MDRequestRef& mdr, MMDSSlaveRequest *ack);
 
   // some helpers
-  CDir *validate_dentry_dir(MDRequest *mdr, CInode *diri, const string& dname);
+  CDir *validate_dentry_dir(MDRequestRef& mdr, CInode *diri, const string& dname);
   CDir *traverse_to_auth_dir(MDRequest *mdr, vector<CDentry*> &trace, filepath refpath);
   CDentry *prepare_null_dentry(MDRequest *mdr, CDir *dir, const string& dname, bool okexist=false);
   CDentry *prepare_stray_dentry(MDRequest *mdr, CInode *in);
@@ -143,8 +143,8 @@ public:
   // requests on existing inodes.
   void handle_client_getattr(MDRequest *mdr, bool is_lookup);
   void handle_client_lookup_parent(MDRequest *mdr);
-  void handle_client_lookup_ino(MDRequest *mdr);
-  void _lookup_ino_2(MDRequest *mdr, int r);
+  void handle_client_lookup_ino(MDRequestRef& mdr);
+  void _lookup_ino_2(MDRequestRef& mdr, int r);
   void handle_client_readdir(MDRequest *mdr);
   void handle_client_file_setlock(MDRequest *mdr);
   void handle_client_file_readlock(MDRequest *mdr);

@@ -779,8 +779,7 @@ void Server::recall_client_state(float ratio)
 /*******
  * some generic stuff for finishing off requests
  */
-/* This function takes responsibility for the passed mdr*/
-void Server::journal_and_reply(MDRequest *mdr, CInode *in, CDentry *dn, LogEvent *le, Context *fin)
+void Server::journal_and_reply(MDRequestRef& mdr, CInode *in, CDentry *dn, LogEvent *le, Context *fin)
 {
   dout(10) << "journal_and_reply tracei " << in << " tracedn " << dn << dendl;
 
@@ -814,12 +813,12 @@ void Server::journal_and_reply(MDRequest *mdr, CInode *in, CDentry *dn, LogEvent
 /*
  * send generic response (just an error code), clean up mdr
  */
-void Server::reply_request(MDRequest *mdr, int r, CInode *tracei, CDentry *tracedn)
+void Server::reply_request(MDRequestRef& mdr, int r, CInode *tracei, CDentry *tracedn)
 {
   reply_request(mdr, new MClientReply(mdr->client_request, r), tracei, tracedn);
 }
 
-void Server::early_reply(MDRequest *mdr, CInode *tracei, CDentry *tracedn)
+void Server::early_reply(MDRequestRef& mdr, CInode *tracei, CDentry *tracedn)
 {
   if (!g_conf->mds_early_reply)
     return;
@@ -889,9 +888,9 @@ void Server::early_reply(MDRequest *mdr, CInode *tracei, CDentry *tracedn)
  * include a trace to tracei
  * Clean up mdr
  */
-void Server::reply_request(MDRequest *mdr, MClientReply *reply, CInode *tracei, CDentry *tracedn) 
+void Server::reply_request(MDRequestRef& mdr, MClientReply *reply, CInode *tracei, CDentry *tracedn)
 {
-  assert(mdr);
+  assert(mdr.get());
   MClientRequest *req = mdr->client_request;
   
   char buf[80];
@@ -963,8 +962,6 @@ void Server::reply_request(MDRequest *mdr, MClientReply *reply, CInode *tracei, 
   
   // clean up request
   mdcache->request_finish(mdr);
-  mdr = 0;
-  req = 0;
 
   // take a closer look at tracei, if it happens to be a remote link
   if (tracei && 
@@ -1010,7 +1007,7 @@ void Server::set_trace_dist(Session *session, MClientReply *reply,
 			    CInode *in, CDentry *dn,
 			    snapid_t snapid,
 			    int dentry_wanted,
-			    MDRequest *mdr)
+			    MDRequestRef& mdr)
 {
   // skip doing this for debugging purposes?
   if (g_conf->mds_inject_traceless_reply_probability &&
@@ -1175,8 +1172,7 @@ void Server::handle_client_request(MClientRequest *req)
   return;
 }
 
-/* This function takes responsibility for the passed mdr*/
-void Server::dispatch_client_request(MDRequest *mdr)
+void Server::dispatch_client_request(MDRequestRef& mdr)
 {
   MClientRequest *req = mdr->client_request;
 
@@ -1481,7 +1477,7 @@ void Server::handle_slave_request_reply(MMDSSlaveRequest *m)
 }
 
 /* This function DOES put the mdr->slave_request before returning*/
-void Server::dispatch_slave_request(MDRequest *mdr)
+void Server::dispatch_slave_request(MDRequestRef& mdr)
 {
   dout(7) << "dispatch_slave_request " << *mdr << " " << *mdr->slave_request << dendl;
 
@@ -1604,7 +1600,7 @@ void Server::dispatch_slave_request(MDRequest *mdr)
 }
 
 /* This function DOES put the mdr->slave_request before returning*/
-void Server::handle_slave_auth_pin(MDRequest *mdr)
+void Server::handle_slave_auth_pin(MDRequestRef& mdr)
 {
   dout(10) << "handle_slave_auth_pin " << *mdr << dendl;
 
@@ -1728,7 +1724,7 @@ void Server::handle_slave_auth_pin(MDRequest *mdr)
 }
 
 /* This function DOES NOT put the passed ack before returning*/
-void Server::handle_slave_auth_pin_ack(MDRequest *mdr, MMDSSlaveRequest *ack)
+void Server::handle_slave_auth_pin_ack(MDRequestRef& mdr, MMDSSlaveRequest *ack)
 {
   dout(10) << "handle_slave_auth_pin_ack on " << *mdr << " " << *ack << dendl;
   int from = ack->get_source().num();
@@ -1789,7 +1785,7 @@ void Server::handle_slave_auth_pin_ack(MDRequest *mdr, MMDSSlaveRequest *ack)
  * verify that the dir exists and would own the dname.
  * do not check if the dentry exists.
  */
-CDir *Server::validate_dentry_dir(MDRequest *mdr, CInode *diri, const string& dname)
+CDir *Server::validate_dentry_dir(MDRequestRef& mdr, CInode *diri, const string& dname)
 {
   // make sure parent is a dir?
   if (!diri->is_dir()) {
@@ -2387,8 +2383,8 @@ void Server::handle_client_lookup_parent(MDRequest *mdr)
 
 struct C_MDS_LookupIno2 : public Context {
   Server *server;
-  MDRequest *mdr;
-  C_MDS_LookupIno2(Server *s, MDRequest *r) : server(s), mdr(r) {}
+  MDRequestRef mdr;
+  C_MDS_LookupIno2(Server *s, MDRequestRef& r) : server(s), mdr(r) {}
   void finish(int r) {
     server->_lookup_ino_2(mdr, r);
   }
@@ -2398,7 +2394,7 @@ struct C_MDS_LookupIno2 : public Context {
 /*
  * filepath:  ino
  */
-void Server::handle_client_lookup_ino(MDRequest *mdr)
+void Server::handle_client_lookup_ino(MDRequestRef& mdr)
 {
   MClientRequest *req = mdr->client_request;
 
@@ -2418,10 +2414,10 @@ void Server::handle_client_lookup_ino(MDRequest *mdr)
   reply_request(mdr, reply, in, NULL);
 }
 
-void Server::_lookup_ino_2(MDRequest *mdr, int r)
+void Server::_lookup_ino_2(MDRequestRef& mdr, int r)
 {
   inodeno_t ino = mdr->client_request->get_filepath().get_ino();
-  dout(10) << "_lookup_ino_2 " << mdr << " ino " << ino << " r=" << r << dendl;
+  dout(10) << "_lookup_ino_2 " << mdr.get() << " ino " << ino << " r=" << r << dendl;
   if (r >= 0) {
     if (r == mds->get_nodeid())
       dispatch_client_request(mdr);
