@@ -544,10 +544,10 @@ void Server::journal_close_session(Session *session, int state)
   mdlog->flush();
 
   // clean up requests, too
-  elist<MDRequest*>::iterator p = session->requests.begin(member_offset(MDRequest,
+  elist<MDRequestImpl*>::iterator p = session->requests.begin(member_offset(MDRequest,
 									item_session_request));
   while (!p.end()) {
-    MDRequest *mdr = *p;
+    MDRequestRef mdrp = (*p)->self_ref.lock();
     ++p;
     mdcache->request_kill(mdr);
   }
@@ -1397,8 +1397,8 @@ void Server::handle_slave_request_reply(MMDSSlaveRequest *m)
     return;
   }
 
-  MDRequest *mdr = mdcache->request_get(m->get_reqid());
-  if (!mdr) {
+  MDRequestRef mdr = mdcache->request_get(m->get_reqid());
+  if (!mdr.get()) {
     dout(10) << "handle_slave_request_reply ignoring reply from unknown reqid " << m->get_reqid() << dendl;
     m->put();
     return;
@@ -1815,7 +1815,7 @@ CDir *Server::validate_dentry_dir(MDRequestRef& mdr, CInode *diri, const string&
  * prepare a null (or existing) dentry in given dir. 
  * wait for any dn lock.
  */
-CDentry* Server::prepare_null_dentry(MDRequest *mdr, CDir *dir, const string& dname, bool okexist)
+CDentry* Server::prepare_null_dentry(MDRequestRef& mdr, CDir *dir, const string& dname, bool okexist)
 {
   dout(10) << "prepare_null_dentry " << dname << " in " << *dir << dendl;
   assert(dir->is_auth());
@@ -1858,7 +1858,7 @@ CDentry* Server::prepare_null_dentry(MDRequest *mdr, CDir *dir, const string& dn
   return dn;
 }
 
-CDentry* Server::prepare_stray_dentry(MDRequest *mdr, CInode *in)
+CDentry* Server::prepare_stray_dentry(MDRequestRef& mdr, CInode *in)
 {
   CDentry *straydn = mdr->straydn;
   if (straydn) {
@@ -1881,7 +1881,7 @@ CDentry* Server::prepare_stray_dentry(MDRequest *mdr, CInode *in)
  *
  * create a new inode.  set c/m/atime.  hit dir pop.
  */
-CInode* Server::prepare_new_inode(MDRequest *mdr, CDir *dir, inodeno_t useino, unsigned mode,
+CInode* Server::prepare_new_inode(MDRequestRef& mdr, CDir *dir, inodeno_t useino, unsigned mode,
 				  ceph_file_layout *layout) 
 {
   CInode *in = new CInode(mdcache);
@@ -1976,7 +1976,7 @@ CInode* Server::prepare_new_inode(MDRequest *mdr, CDir *dir, inodeno_t useino, u
   return in;
 }
 
-void Server::journal_allocated_inos(MDRequest *mdr, EMetaBlob *blob)
+void Server::journal_allocated_inos(MDRequestRef& mdr, EMetaBlob *blob)
 {
   dout(20) << "journal_allocated_inos sessionmapv " << mds->sessionmap.projected
 	   << " inotablev " << mds->inotable->get_projected_version()
@@ -1989,7 +1989,7 @@ void Server::journal_allocated_inos(MDRequest *mdr, EMetaBlob *blob)
 		      mds->inotable->get_projected_version());
 }
 
-void Server::apply_allocated_inos(MDRequest *mdr)
+void Server::apply_allocated_inos(MDRequestRef& mdr)
 {
   Session *session = mdr->session;
   dout(10) << "apply_allocated_inos " << mdr->alloc_ino
@@ -2015,7 +2015,7 @@ void Server::apply_allocated_inos(MDRequest *mdr)
 
 
 
-CDir *Server::traverse_to_auth_dir(MDRequest *mdr, vector<CDentry*> &trace, filepath refpath)
+CDir *Server::traverse_to_auth_dir(MDRequestRef& mdr, vector<CDentry*> &trace, filepath refpath)
 {
   // figure parent dir vs dname
   if (refpath.depth() == 0) {
@@ -2048,23 +2048,20 @@ CDir *Server::traverse_to_auth_dir(MDRequest *mdr, vector<CDentry*> &trace, file
 
 class C_MDS_TryFindInode : public Context {
   Server *server;
-  MDRequest *mdr;
+  MDRequestRef mdr;
 public:
-  C_MDS_TryFindInode(Server *s, MDRequest *r) : server(s), mdr(r) {
-    mdr->get();
-  }
+  C_MDS_TryFindInode(Server *s, MDRequestRef& r) : server(s), mdr(r) {}
   virtual void finish(int r) {
     if (r == -ESTALE) // :( find_ino_peers failed
       server->reply_request(mdr, r);
     else
       server->dispatch_client_request(mdr);
-    mdr->put();
   }
 };
 
 /* If this returns null, the request has been handled
  * as appropriate: forwarded on, or the client's been replied to */
-CInode* Server::rdlock_path_pin_ref(MDRequest *mdr, int n,
+CInode* Server::rdlock_path_pin_ref(MDRequestRef& mdr, int n,
 				    set<SimpleLock*> &rdlocks,
 				    bool want_auth,
 				    bool no_want_auth, /* for readdir, who doesn't want auth _even_if_ it's
@@ -2160,7 +2157,7 @@ CInode* Server::rdlock_path_pin_ref(MDRequest *mdr, int n,
  * create null dentry in place (or use existing if okexist).
  * get rdlocks on traversed dentries, xlock on new dentry.
  */
-CDentry* Server::rdlock_path_xlock_dentry(MDRequest *mdr, int n,
+CDentry* Server::rdlock_path_xlock_dentry(MDRequestRef& mdr, int n,
 					  set<SimpleLock*>& rdlocks, set<SimpleLock*>& wrlocks, set<SimpleLock*>& xlocks,
 					  bool okexist, bool mustexist, bool alwaysxlock,
 					  ceph_file_layout **layout)
@@ -2264,7 +2261,7 @@ CDentry* Server::rdlock_path_xlock_dentry(MDRequest *mdr, int n,
  * @param mdr request
  * @returns the pointer, or NULL if it had to be delayed (but mdr is taken care of)
  */
-CDir* Server::try_open_auth_dirfrag(CInode *diri, frag_t fg, MDRequest *mdr)
+CDir* Server::try_open_auth_dirfrag(CInode *diri, frag_t fg, MDRequestRef& mdr)
 {
   CDir *dir = diri->get_dirfrag(fg);
 
@@ -2304,7 +2301,7 @@ CDir* Server::try_open_auth_dirfrag(CInode *diri, frag_t fg, MDRequest *mdr)
 // ===============================================================================
 // STAT
 
-void Server::handle_client_getattr(MDRequest *mdr, bool is_lookup)
+void Server::handle_client_getattr(MDRequestRef& mdr, bool is_lookup)
 {
   MClientRequest *req = mdr->client_request;
   set<SimpleLock*> rdlocks, wrlocks, xlocks;
@@ -2357,7 +2354,7 @@ void Server::handle_client_getattr(MDRequest *mdr, bool is_lookup)
 }
 
 /* This function will clean up the passed mdr*/
-void Server::handle_client_lookup_parent(MDRequest *mdr)
+void Server::handle_client_lookup_parent(MDRequestRef& mdr)
 {
   MClientRequest *req = mdr->client_request;
 
@@ -2434,7 +2431,7 @@ void Server::_lookup_ino_2(MDRequestRef& mdr, int r)
 
 
 /* This function takes responsibility for the passed mdr*/
-void Server::handle_client_open(MDRequest *mdr)
+void Server::handle_client_open(MDRequestRef& mdr)
 {
   MClientRequest *req = mdr->client_request;
 
@@ -2592,12 +2589,12 @@ void Server::handle_client_open(MDRequest *mdr)
 
 class C_MDS_openc_finish : public Context {
   MDS *mds;
-  MDRequest *mdr;
+  MDRequestRef mdr;
   CDentry *dn;
   CInode *newi;
   snapid_t follows;
 public:
-  C_MDS_openc_finish(MDS *m, MDRequest *r, CDentry *d, CInode *ni, snapid_t f) :
+  C_MDS_openc_finish(MDS *m, MDRequestRef& r, CDentry *d, CInode *ni, snapid_t f) :
     mds(m), mdr(r), dn(d), newi(ni), follows(f) {}
   void finish(int r) {
     assert(r == 0);

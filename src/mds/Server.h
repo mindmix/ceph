@@ -121,28 +121,31 @@ public:
 
   // some helpers
   CDir *validate_dentry_dir(MDRequestRef& mdr, CInode *diri, const string& dname);
-  CDir *traverse_to_auth_dir(MDRequest *mdr, vector<CDentry*> &trace, filepath refpath);
-  CDentry *prepare_null_dentry(MDRequest *mdr, CDir *dir, const string& dname, bool okexist=false);
-  CDentry *prepare_stray_dentry(MDRequest *mdr, CInode *in);
-  CInode* prepare_new_inode(MDRequest *mdr, CDir *dir, inodeno_t useino, unsigned mode,
+  CDir *traverse_to_auth_dir(MDRequestRef& mdr, vector<CDentry*> &trace, filepath refpath);
+  CDentry *prepare_null_dentry(MDRequestRef& mdr, CDir *dir, const string& dname, bool okexist=false);
+  CDentry *prepare_stray_dentry(MDRequestRef& mdr, CInode *in);
+  CInode* prepare_new_inode(MDRequestRef& mdr, CDir *dir, inodeno_t useino, unsigned mode,
 			    ceph_file_layout *layout=NULL);
-  void journal_allocated_inos(MDRequest *mdr, EMetaBlob *blob);
-  void apply_allocated_inos(MDRequest *mdr);
+  void journal_allocated_inos(MDRequestRef& mdr, EMetaBlob *blob);
+  void apply_allocated_inos(MDRequestRef& mdr);
 
-  CInode* rdlock_path_pin_ref(MDRequest *mdr, int n, set<SimpleLock*>& rdlocks, bool want_auth,
+  CInode* rdlock_path_pin_ref(MDRequestRef& mdr, int n, set<SimpleLock*>& rdlocks, bool want_auth,
 			      bool no_want_auth=false,
 			      ceph_file_layout **layout=NULL,
 			      bool no_lookup=false);
-  CDentry* rdlock_path_xlock_dentry(MDRequest *mdr, int n, set<SimpleLock*>& rdlocks, set<SimpleLock*>& wrlocks, 
-				    set<SimpleLock*>& xlocks, bool okexist, bool mustexist, bool alwaysxlock,
+  CDentry* rdlock_path_xlock_dentry(MDRequestRef& mdr, int n,
+                                    set<SimpleLock*>& rdlocks,
+                                    set<SimpleLock*>& wrlocks,
+				    set<SimpleLock*>& xlocks, bool okexist,
+				    bool mustexist, bool alwaysxlock,
 				    ceph_file_layout **layout=NULL);
 
-  CDir* try_open_auth_dirfrag(CInode *diri, frag_t fg, MDRequest *mdr);
+  CDir* try_open_auth_dirfrag(CInode *diri, frag_t fg, MDRequestRef& mdr);
 
 
   // requests on existing inodes.
-  void handle_client_getattr(MDRequest *mdr, bool is_lookup);
-  void handle_client_lookup_parent(MDRequest *mdr);
+  void handle_client_getattr(MDRequestRef& mdr, bool is_lookup);
+  void handle_client_lookup_parent(MDRequestRef mdr);
   void handle_client_lookup_ino(MDRequestRef& mdr);
   void _lookup_ino_2(MDRequestRef& mdr, int r);
   void handle_client_readdir(MDRequest *mdr);
@@ -169,7 +172,7 @@ public:
   void handle_client_fsync(MDRequest *mdr);
 
   // open
-  void handle_client_open(MDRequest *mdr);
+  void handle_client_open(MDRequestRef& mdr);
   void handle_client_openc(MDRequest *mdr);  // O_CREAT variant.
   void do_open_truncate(MDRequest *mdr, int cmode);  // O_TRUNC variant.
 
