@@ -827,6 +827,33 @@ void EMetaBlob::decode(bufferlist::iterator &bl)
   DECODE_FINISH(bl);
 }
 
+
+std::string EMetaBlob::get_path() const
+{
+  std::string path;
+  for (list<dirfrag_t>::const_iterator i = lump_order.begin();
+       i != lump_order.end(); ++i) {
+
+    dirlump dl = lump_map.at(*i);
+    dl._decode_bits();
+    list<ceph::shared_ptr<fullbit> > &fbl = dl.get_dfull();
+
+    for (list<ceph::shared_ptr<fullbit> >::const_iterator
+        iter = fbl.begin(); iter != fbl.end(); ++iter) {
+
+      // HACK: to get fullbit to populate itself from its _enc
+      // member, call dump() (side effect)
+      JSONFormatter jf;
+      (*iter)->dump(&jf);
+
+      path += "/";
+      path += (*iter)->dn;
+    }
+  }
+  return path;
+}
+
+
 void EMetaBlob::dump(Formatter *f) const
 {
   f->open_array_section("lumps");
