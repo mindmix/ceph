@@ -2505,7 +2505,7 @@ void MDCache::send_slave_resolves()
   } else {
     set<int> resolve_set;
     mds->mdsmap->get_mds_set(resolve_set, MDSMap::STATE_RESOLVE);
-    for (ceph::unordered_map<metareqid_t, MDRequest*>::iterator p = active_requests.begin();
+    for (ceph::unordered_map<metareqid_t, ceph::weak_ptr<MDRequestImpl> >::iterator p = active_requests.begin();
 	 p != active_requests.end();
 	 ++p) {
       if (!p->second->is_slave() || !p->second->slave_did_prepare())
@@ -2658,8 +2658,8 @@ void MDCache::handle_mds_failure(int who)
   migrator->handle_mds_failure_or_stop(who);
 
   // clean up any requests slave to/from this node
-  list<MDRequest*> finish;
-  for (ceph::unordered_map<metareqid_t, MDRequest*>::iterator p = active_requests.begin();
+  list<MDRequestRef> finish;
+  for (ceph::unordered_map<metareqid_t, ceph::weak_ptr<MDRequestImpl> >::iterator p = active_requests.begin();
        p != active_requests.end();
        ++p) {
     // slave to the failed node?
@@ -2680,7 +2680,7 @@ void MDCache::handle_mds_failure(int who)
 	if (p->second->slave_request)
 	  p->second->aborted = true;
 	else
-	  finish.push_back(p->second);
+	  finish.push_back(p->second.lock());
       }
     }
 
@@ -3695,7 +3695,7 @@ void MDCache::rejoin_send_rejoins()
   if (!mds->is_rejoin()) {
     // i am survivor.  send strong rejoin.
     // note request remote_auth_pins, xlocks
-    for (ceph::unordered_map<metareqid_t, MDRequest*>::iterator p = active_requests.begin();
+    for (ceph::unordered_map<metareqid_t, ceph::weak_ptr<MDRequestImpl> >::iterator p = active_requests.begin();
 	 p != active_requests.end();
 	 ++p) {
       if ( p->second->is_slave())
@@ -8790,7 +8790,7 @@ void MDCache::kick_find_ino_peers(int who)
 int MDCache::get_num_client_requests()
 {
   int count = 0;
-  for (ceph::unordered_map<metareqid_t, MDRequest*>::iterator p = active_requests.begin();
+  for (ceph::unordered_map<metareqid_t, ceph::weak_ptr<MDRequestImpl> >::iterator p = active_requests.begin();
       p != active_requests.end();
       ++p) {
     if (p->second->reqid.name.is_client() && !p->second->is_slave())
