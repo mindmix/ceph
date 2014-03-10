@@ -2623,7 +2623,7 @@ public:
 };
 
 /* This function takes responsibility for the passed mdr*/
-void Server::handle_client_openc(MDRequest *mdr)
+void Server::handle_client_openc(MDRequestRef& mdr)
 {
   MClientRequest *req = mdr->client_request;
   client_t client = mdr->get_client();
@@ -2782,7 +2782,7 @@ void Server::handle_client_openc(MDRequest *mdr)
 
 
 
-void Server::handle_client_readdir(MDRequest *mdr)
+void Server::handle_client_readdir(MDRequestRef& mdr)
 {
   MClientRequest *req = mdr->client_request;
   client_t client = req->get_source().num();
@@ -3008,11 +3008,11 @@ void Server::handle_client_readdir(MDRequest *mdr)
  */
 class C_MDS_inode_update_finish : public Context {
   MDS *mds;
-  MDRequest *mdr;
+  MDRequestRef mdr;
   CInode *in;
   bool truncating_smaller, changed_ranges;
 public:
-  C_MDS_inode_update_finish(MDS *m, MDRequest *r, CInode *i,
+  C_MDS_inode_update_finish(MDS *m, MDRequestRef& r, CInode *i,
 			    bool sm=false, bool cr=false) :
     mds(m), mdr(r), in(i), truncating_smaller(sm), changed_ranges(cr) { }
   void finish(int r) {
@@ -3037,7 +3037,7 @@ public:
   }
 };
 
-void Server::handle_client_file_setlock(MDRequest *mdr)
+void Server::handle_client_file_setlock(MDRequestRef& mdr)
 {
   MClientRequest *req = mdr->client_request;
   set<SimpleLock*> rdlocks, wrlocks, xlocks;
@@ -3128,7 +3128,7 @@ void Server::handle_client_file_setlock(MDRequest *mdr)
   dout(10) << " state after lock change: " << *lock_state << dendl;
 }
 
-void Server::handle_client_file_readlock(MDRequest *mdr)
+void Server::handle_client_file_readlock(MDRequestRef& mdr)
 {
   MClientRequest *req = mdr->client_request;
   set<SimpleLock*> rdlocks, wrlocks, xlocks;
@@ -3182,7 +3182,7 @@ void Server::handle_client_file_readlock(MDRequest *mdr)
   reply_request(mdr, reply);
 }
 
-void Server::handle_client_setattr(MDRequest *mdr)
+void Server::handle_client_setattr(MDRequestRef& mdr)
 {
   MClientRequest *req = mdr->client_request;
   set<SimpleLock*> rdlocks, wrlocks, xlocks;
@@ -3288,7 +3288,7 @@ void Server::handle_client_setattr(MDRequest *mdr)
 }
 
 /* Takes responsibility for mdr */
-void Server::do_open_truncate(MDRequest *mdr, int cmode)
+void Server::do_open_truncate(MDRequestRef& mdr, int cmode)
 {
   CInode *in = mdr->in[0];
   client_t client = mdr->get_client();
@@ -3347,7 +3347,7 @@ void Server::do_open_truncate(MDRequest *mdr, int cmode)
 
 
 /* This function cleans up the passed mdr */
-void Server::handle_client_setlayout(MDRequest *mdr)
+void Server::handle_client_setlayout(MDRequestRef& mdr)
 {
   MClientRequest *req = mdr->client_request;
   set<SimpleLock*> rdlocks, wrlocks, xlocks;
@@ -3426,7 +3426,7 @@ void Server::handle_client_setlayout(MDRequest *mdr)
   journal_and_reply(mdr, cur, 0, le, new C_MDS_inode_update_finish(mds, mdr, cur));
 }
 
-void Server::handle_client_setdirlayout(MDRequest *mdr)
+void Server::handle_client_setdirlayout(MDRequestRef& mdr)
 {
   MClientRequest *req = mdr->client_request;
   set<SimpleLock*> rdlocks, wrlocks, xlocks;
@@ -3585,7 +3585,7 @@ int Server::parse_layout_vxattr(string name, string value, ceph_file_layout *lay
   return 0;
 }
 
-void Server::handle_set_vxattr(MDRequest *mdr, CInode *cur,
+void Server::handle_set_vxattr(MDRequestRef& mdr, CInode *cur,
 			       ceph_file_layout *dir_layout,
 			       set<SimpleLock*> rdlocks,
 			       set<SimpleLock*> wrlocks,
@@ -3696,7 +3696,7 @@ void Server::handle_set_vxattr(MDRequest *mdr, CInode *cur,
   reply_request(mdr, -EINVAL);
 }
 
-void Server::handle_remove_vxattr(MDRequest *mdr, CInode *cur,
+void Server::handle_remove_vxattr(MDRequestRef& mdr, CInode *cur,
 				  set<SimpleLock*> rdlocks,
 				  set<SimpleLock*> wrlocks,
 				  set<SimpleLock*> xlocks)
@@ -3744,11 +3744,11 @@ void Server::handle_remove_vxattr(MDRequest *mdr, CInode *cur,
 
 class C_MDS_inode_xattr_update_finish : public Context {
   MDS *mds;
-  MDRequest *mdr;
+  MDRequestRef mdr;
   CInode *in;
 public:
 
-  C_MDS_inode_xattr_update_finish(MDS *m, MDRequest *r, CInode *i) :
+  C_MDS_inode_xattr_update_finish(MDS *m, MDRequestRef& r, CInode *i) :
     mds(m), mdr(r), in(i) { }
   void finish(int r) {
     assert(r == 0);
@@ -3764,7 +3764,7 @@ public:
   }
 };
 
-void Server::handle_client_setxattr(MDRequest *mdr)
+void Server::handle_client_setxattr(MDRequestRef& mdr)
 {
   MClientRequest *req = mdr->client_request;
   string name(req->get_path2());
@@ -3834,7 +3834,7 @@ void Server::handle_client_setxattr(MDRequest *mdr)
   journal_and_reply(mdr, cur, 0, le, new C_MDS_inode_update_finish(mds, mdr, cur));
 }
 
-void Server::handle_client_removexattr(MDRequest *mdr)
+void Server::handle_client_removexattr(MDRequestRef& mdr)
 {
   MClientRequest *req = mdr->client_request;
   string name(req->get_path2());
@@ -3901,12 +3901,12 @@ void Server::handle_client_removexattr(MDRequest *mdr)
 
 class C_MDS_mknod_finish : public Context {
   MDS *mds;
-  MDRequest *mdr;
+  MDRequestRef mdr;
   CDentry *dn;
   CInode *newi;
   snapid_t follows;
 public:
-  C_MDS_mknod_finish(MDS *m, MDRequest *r, CDentry *d, CInode *ni, snapid_t f) :
+  C_MDS_mknod_finish(MDS *m, MDRequestRef& r, CDentry *d, CInode *ni, snapid_t f) :
     mds(m), mdr(r), dn(d), newi(ni), follows(f) {}
   void finish(int r) {
     assert(r == 0);
@@ -3948,7 +3948,7 @@ public:
 };
 
 
-void Server::handle_client_mknod(MDRequest *mdr)
+void Server::handle_client_mknod(MDRequestRef& mdr)
 {
   MClientRequest *req = mdr->client_request;
   client_t client = mdr->get_client();
@@ -4042,7 +4042,7 @@ void Server::handle_client_mknod(MDRequest *mdr)
 
 // MKDIR
 /* This function takes responsibility for the passed mdr*/
-void Server::handle_client_mkdir(MDRequest *mdr)
+void Server::handle_client_mkdir(MDRequestRef& mdr)
 {
   MClientRequest *req = mdr->client_request;
   set<SimpleLock*> rdlocks, wrlocks, xlocks;
@@ -4120,7 +4120,7 @@ void Server::handle_client_mkdir(MDRequest *mdr)
 
 // SYMLINK
 
-void Server::handle_client_symlink(MDRequest *mdr)
+void Server::handle_client_symlink(MDRequestRef& mdr)
 {
   MClientRequest *req = mdr->client_request;
   set<SimpleLock*> rdlocks, wrlocks, xlocks;
@@ -4174,7 +4174,7 @@ void Server::handle_client_symlink(MDRequest *mdr)
 
 // LINK
 
-void Server::handle_client_link(MDRequest *mdr)
+void Server::handle_client_link(MDRequestRef& mdr)
 {
   MClientRequest *req = mdr->client_request;
 
@@ -4247,13 +4247,13 @@ void Server::handle_client_link(MDRequest *mdr)
 
 class C_MDS_link_local_finish : public Context {
   MDS *mds;
-  MDRequest *mdr;
+  MDRequestRef mdr;
   CDentry *dn;
   CInode *targeti;
   version_t dnpv;
   version_t tipv;
 public:
-  C_MDS_link_local_finish(MDS *m, MDRequest *r, CDentry *d, CInode *ti, 
+  C_MDS_link_local_finish(MDS *m, MDRequestRef& r, CDentry *d, CInode *ti,
 			  version_t dnpv_, version_t tipv_) :
     mds(m), mdr(r), dn(d), targeti(ti),
     dnpv(dnpv_), tipv(tipv_) { }
@@ -4264,7 +4264,7 @@ public:
 };
 
 
-void Server::_link_local(MDRequest *mdr, CDentry *dn, CInode *targeti)
+void Server::_link_local(MDRequestRef& mdr, CDentry *dn, CInode *targeti)
 {
   dout(10) << "_link_local " << *dn << " to " << *targeti << dendl;
 
@@ -4299,7 +4299,7 @@ void Server::_link_local(MDRequest *mdr, CDentry *dn, CInode *targeti)
   journal_and_reply(mdr, targeti, dn, le, new C_MDS_link_local_finish(mds, mdr, dn, targeti, dnpv, tipv));
 }
 
-void Server::_link_local_finish(MDRequest *mdr, CDentry *dn, CInode *targeti,
+void Server::_link_local_finish(MDRequestRef& mdr, CDentry *dn, CInode *targeti,
 				version_t dnpv, version_t tipv)
 {
   dout(10) << "_link_local_finish " << *dn << " to " << *targeti << dendl;
@@ -4329,13 +4329,13 @@ void Server::_link_local_finish(MDRequest *mdr, CDentry *dn, CInode *targeti,
 
 class C_MDS_link_remote_finish : public Context {
   MDS *mds;
-  MDRequest *mdr;
+  MDRequestRef mdr;
   bool inc;
   CDentry *dn;
   CInode *targeti;
   version_t dpv;
 public:
-  C_MDS_link_remote_finish(MDS *m, MDRequest *r, bool i, CDentry *d, CInode *ti) :
+  C_MDS_link_remote_finish(MDS *m, MDRequestRef& r, bool i, CDentry *d, CInode *ti) :
     mds(m), mdr(r), inc(i), dn(d), targeti(ti),
     dpv(d->get_projected_version()) {}
   void finish(int r) {
@@ -4344,7 +4344,7 @@ public:
   }
 };
 
-void Server::_link_remote(MDRequest *mdr, bool inc, CDentry *dn, CInode *targeti)
+void Server::_link_remote(MDRequestRef& mdr, bool inc, CDentry *dn, CInode *targeti)
 {
   dout(10) << "_link_remote " 
 	   << (inc ? "link ":"unlink ")
@@ -4409,7 +4409,7 @@ void Server::_link_remote(MDRequest *mdr, bool inc, CDentry *dn, CInode *targeti
   journal_and_reply(mdr, targeti, dn, le, new C_MDS_link_remote_finish(mds, mdr, inc, dn, targeti));
 }
 
-void Server::_link_remote_finish(MDRequest *mdr, bool inc,
+void Server::_link_remote_finish(MDRequestRef& mdr, bool inc,
 				 CDentry *dn, CInode *targeti,
 				 version_t dpv)
 {
@@ -4461,10 +4461,10 @@ void Server::_link_remote_finish(MDRequest *mdr, bool inc,
 
 class C_MDS_SlaveLinkPrep : public Context {
   Server *server;
-  MDRequest *mdr;
+  MDRequestRef mdr;
   CInode *targeti;
 public:
-  C_MDS_SlaveLinkPrep(Server *s, MDRequest *r, CInode *t) :
+  C_MDS_SlaveLinkPrep(Server *s, MDRequestRef& r, CInode *t) :
     server(s), mdr(r), targeti(t) { }
   void finish(int r) {
     assert(r == 0);
@@ -4473,7 +4473,7 @@ public:
 };
 
 /* This function DOES put the mdr->slave_request before returning*/
-void Server::handle_slave_link_prep(MDRequest *mdr)
+void Server::handle_slave_link_prep(MDRequestRef& mdr)
 {
   dout(10) << "handle_slave_link_prep " << *mdr 
 	   << " on " << mdr->slave_request->get_object_info() 
@@ -4556,17 +4556,17 @@ void Server::handle_slave_link_prep(MDRequest *mdr)
 
 class C_MDS_SlaveLinkCommit : public Context {
   Server *server;
-  MDRequest *mdr;
+  MDRequestRef mdr;
   CInode *targeti;
 public:
-  C_MDS_SlaveLinkCommit(Server *s, MDRequest *r, CInode *t) :
+  C_MDS_SlaveLinkCommit(Server *s, MDRequestRef& r, CInode *t) :
     server(s), mdr(r), targeti(t) { }
   void finish(int r) {
     server->_commit_slave_link(mdr, r, targeti);
   }
 };
 
-void Server::_logged_slave_link(MDRequest *mdr, CInode *targeti) 
+void Server::_logged_slave_link(MDRequestRef& mdr, CInode *targeti)
 {
   dout(10) << "_logged_slave_link " << *mdr
 	   << " " << *targeti << dendl;
@@ -4596,14 +4596,14 @@ void Server::_logged_slave_link(MDRequest *mdr, CInode *targeti)
 
 struct C_MDS_CommittedSlave : public Context {
   Server *server;
-  MDRequest *mdr;
-  C_MDS_CommittedSlave(Server *s, MDRequest *m) : server(s), mdr(m) {}
+  MDRequestRef mdr;
+  C_MDS_CommittedSlave(Server *s, MDRequestRef& m) : server(s), mdr(m) {}
   void finish(int r) {
     server->_committed_slave(mdr);
   }
 };
 
-void Server::_commit_slave_link(MDRequest *mdr, int r, CInode *targeti)
+void Server::_commit_slave_link(MDRequestRef& mdr, int r, CInode *targeti)
 {  
   dout(10) << "_commit_slave_link " << *mdr
 	   << " r=" << r
@@ -4625,7 +4625,7 @@ void Server::_commit_slave_link(MDRequest *mdr, int r, CInode *targeti)
   }
 }
 
-void Server::_committed_slave(MDRequest *mdr)
+void Server::_committed_slave(MDRequestRef& mdr)
 {
   dout(10) << "_committed_slave " << *mdr << dendl;
 
@@ -4640,14 +4640,14 @@ void Server::_committed_slave(MDRequest *mdr)
 struct C_MDS_LoggedLinkRollback : public Context {
   Server *server;
   Mutation *mut;
-  MDRequest *mdr;
-  C_MDS_LoggedLinkRollback(Server *s, Mutation *m, MDRequest *r) : server(s), mut(m), mdr(r) {}
+  MDRequestRef mdr;
+  C_MDS_LoggedLinkRollback(Server *s, Mutation *m, MDRequestRef& r) : server(s), mut(m), mdr(r) {}
   void finish(int r) {
     server->_link_rollback_finish(mut, mdr);
   }
 };
 
-void Server::do_link_rollback(bufferlist &rbl, int master, MDRequest *mdr)
+void Server::do_link_rollback(bufferlist &rbl, int master, MDRequestRef& mdr)
 {
   link_rollback rollback;
   bufferlist::iterator p = rbl.begin();
@@ -4707,7 +4707,7 @@ void Server::do_link_rollback(bufferlist &rbl, int master, MDRequest *mdr)
   mdlog->flush();
 }
 
-void Server::_link_rollback_finish(Mutation *mut, MDRequest *mdr)
+void Server::_link_rollback_finish(Mutation *mut, MDRequestRef& mdr)
 {
   dout(10) << "_link_rollback_finish" << dendl;
 
@@ -4725,7 +4725,7 @@ void Server::_link_rollback_finish(Mutation *mut, MDRequest *mdr)
 
 
 /* This function DOES NOT put the passed message before returning*/
-void Server::handle_slave_link_prep_ack(MDRequest *mdr, MMDSSlaveRequest *m)
+void Server::handle_slave_link_prep_ack(MDRequestRef& mdr, MMDSSlaveRequest *m)
 {
   dout(10) << "handle_slave_link_prep_ack " << *mdr 
 	   << " " << *m << dendl;
@@ -4755,7 +4755,7 @@ void Server::handle_slave_link_prep_ack(MDRequest *mdr, MMDSSlaveRequest *m)
 
 // UNLINK
 
-void Server::handle_client_unlink(MDRequest *mdr)
+void Server::handle_client_unlink(MDRequestRef& mdr)
 {
   MClientRequest *req = mdr->client_request;
   client_t client = mdr->get_client();
@@ -4933,12 +4933,12 @@ void Server::handle_client_unlink(MDRequest *mdr)
 
 class C_MDS_unlink_local_finish : public Context {
   MDS *mds;
-  MDRequest *mdr;
+  MDRequestRef mdr;
   CDentry *dn;
   CDentry *straydn;
   version_t dnpv;  // deleted dentry
 public:
-  C_MDS_unlink_local_finish(MDS *m, MDRequest *r, CDentry *d, CDentry *sd) :
+  C_MDS_unlink_local_finish(MDS *m, MDRequestRef& r, CDentry *d, CDentry *sd) :
     mds(m), mdr(r), dn(d), straydn(sd),
     dnpv(d->get_projected_version()) {}
   void finish(int r) {
@@ -4947,7 +4947,7 @@ public:
   }
 };
 
-void Server::_unlink_local(MDRequest *mdr, CDentry *dn, CDentry *straydn)
+void Server::_unlink_local(MDRequestRef& mdr, CDentry *dn, CDentry *straydn)
 {
   dout(10) << "_unlink_local " << *dn << dendl;
 
@@ -5028,7 +5028,7 @@ void Server::_unlink_local(MDRequest *mdr, CDentry *dn, CDentry *straydn)
   journal_and_reply(mdr, 0, dn, le, new C_MDS_unlink_local_finish(mds, mdr, dn, straydn));
 }
 
-void Server::_unlink_local_finish(MDRequest *mdr, 
+void Server::_unlink_local_finish(MDRequestRef& mdr,
 				  CDentry *dn, CDentry *straydn,
 				  version_t dnpv) 
 {
@@ -5084,7 +5084,7 @@ void Server::_unlink_local_finish(MDRequest *mdr,
   dn->get_dir()->try_remove_unlinked_dn(dn);
 }
 
-bool Server::_rmdir_prepare_witness(MDRequest *mdr, int who, CDentry *dn, CDentry *straydn)
+bool Server::_rmdir_prepare_witness(MDRequestRef& mdr, int who, CDentry *dn, CDentry *straydn)
 {
   if (!mds->mdsmap->is_clientreplay_or_active_or_stopping(who)) {
     dout(10) << "_rmdir_prepare_witness mds." << who << " is not active" << dendl;
@@ -5111,16 +5111,16 @@ bool Server::_rmdir_prepare_witness(MDRequest *mdr, int who, CDentry *dn, CDentr
 
 struct C_MDS_SlaveRmdirPrep : public Context {
   Server *server;
-  MDRequest *mdr;
+  MDRequestRef mdr;
   CDentry *dn, *straydn;
-  C_MDS_SlaveRmdirPrep(Server *s, MDRequest *r, CDentry *d, CDentry *st)
+  C_MDS_SlaveRmdirPrep(Server *s, MDRequestRef& r, CDentry *d, CDentry *st)
     : server(s), mdr(r), dn(d), straydn(st) {}
   void finish(int r) {
     server->_logged_slave_rmdir(mdr, dn, straydn);
   }
 };
 
-void Server::handle_slave_rmdir_prep(MDRequest *mdr)
+void Server::handle_slave_rmdir_prep(MDRequestRef& mdr)
 {
   dout(10) << "handle_slave_rmdir_prep " << *mdr 
 	   << " " << mdr->slave_request->srcdnpath 
@@ -5175,15 +5175,15 @@ void Server::handle_slave_rmdir_prep(MDRequest *mdr)
 
 struct C_MDS_SlaveRmdirCommit : public Context {
   Server *server;
-  MDRequest *mdr;
-  C_MDS_SlaveRmdirCommit(Server *s, MDRequest *r)
+  MDRequestRef mdr;
+  C_MDS_SlaveRmdirCommit(Server *s, MDRequestRef& r)
     : server(s), mdr(r) { }
   void finish(int r) {
     server->_commit_slave_rmdir(mdr, r);
   }
 };
 
-void Server::_logged_slave_rmdir(MDRequest *mdr, CDentry *dn, CDentry *straydn)
+void Server::_logged_slave_rmdir(MDRequestRef& mdr, CDentry *dn, CDentry *straydn)
 {
   dout(10) << "_logged_slave_rmdir " << *mdr << " on " << *dn << dendl;
 
@@ -5208,7 +5208,7 @@ void Server::_logged_slave_rmdir(MDRequest *mdr, CDentry *dn, CDentry *straydn)
   mdr->straydn = 0;
 }
 
-void Server::handle_slave_rmdir_prep_ack(MDRequest *mdr, MMDSSlaveRequest *ack)
+void Server::handle_slave_rmdir_prep_ack(MDRequestRef& mdr, MMDSSlaveRequest *ack)
 {
   dout(10) << "handle_slave_rmdir_prep_ack " << *mdr 
 	   << " " << *ack << dendl;
@@ -5228,7 +5228,7 @@ void Server::handle_slave_rmdir_prep_ack(MDRequest *mdr, MMDSSlaveRequest *ack)
     dout(10) << "still waiting on slaves " << mdr->more()->waiting_on_slave << dendl;
 }
 
-void Server::_commit_slave_rmdir(MDRequest *mdr, int r)
+void Server::_commit_slave_rmdir(MDRequestRef& mdr, int r)
 {
   dout(10) << "_commit_slave_rmdir " << *mdr << " r=" << r << dendl;
   
@@ -5249,18 +5249,18 @@ void Server::_commit_slave_rmdir(MDRequest *mdr, int r)
 
 struct C_MDS_LoggedRmdirRollback : public Context {
   Server *server;
-  MDRequest *mdr;
+  MDRequestRef mdr;
   metareqid_t reqid;
   CDentry *dn;
   CDentry *straydn;
-  C_MDS_LoggedRmdirRollback(Server *s, MDRequest *m, metareqid_t mr, CDentry *d, CDentry *st)
+  C_MDS_LoggedRmdirRollback(Server *s, MDRequestRef& m, metareqid_t mr, CDentry *d, CDentry *st)
     : server(s), mdr(m), reqid(mr), dn(d), straydn(st) {}
   void finish(int r) {
     server->_rmdir_rollback_finish(mdr, reqid, dn, straydn);
   }
 };
 
-void Server::do_rmdir_rollback(bufferlist &rbl, int master, MDRequest *mdr)
+void Server::do_rmdir_rollback(bufferlist &rbl, int master, MDRequestRef& mdr)
 {
   // unlink the other rollback methods, the rmdir rollback is only
   // needed to record the subtree changes in the journal for inode
@@ -5307,7 +5307,7 @@ void Server::do_rmdir_rollback(bufferlist &rbl, int master, MDRequest *mdr)
   mdlog->flush();
 }
 
-void Server::_rmdir_rollback_finish(MDRequest *mdr, metareqid_t reqid, CDentry *dn, CDentry *straydn)
+void Server::_rmdir_rollback_finish(MDRequestRef& mdr, metareqid_t reqid, CDentry *dn, CDentry *straydn)
 {
   dout(10) << "_rmdir_rollback_finish " << reqid << dendl;
 
@@ -5336,7 +5336,7 @@ void Server::_rmdir_rollback_finish(MDRequest *mdr, metareqid_t reqid, CDentry *
  * the unlocked varient this is a fastpath check.  we can't really be
  * sure until we rdlock the filelock.
  */
-bool Server::_dir_is_nonempty_unlocked(MDRequest *mdr, CInode *in)
+bool Server::_dir_is_nonempty_unlocked(MDRequestRef& mdr, CInode *in)
 {
   dout(10) << "dir_is_nonempty_unlocked " << *in << dendl;
   assert(in->is_auth());
@@ -5361,7 +5361,7 @@ bool Server::_dir_is_nonempty_unlocked(MDRequest *mdr, CInode *in)
   return false;
 }
 
-bool Server::_dir_is_nonempty(MDRequest *mdr, CInode *in)
+bool Server::_dir_is_nonempty(MDRequestRef& mdr, CInode *in)
 {
   dout(10) << "dir_is_nonempty " << *in << dendl;
   assert(in->is_auth());
@@ -5396,12 +5396,12 @@ bool Server::_dir_is_nonempty(MDRequest *mdr, CInode *in)
 
 class C_MDS_rename_finish : public Context {
   MDS *mds;
-  MDRequest *mdr;
+  MDRequestRef mdr;
   CDentry *srcdn;
   CDentry *destdn;
   CDentry *straydn;
 public:
-  C_MDS_rename_finish(MDS *m, MDRequest *r,
+  C_MDS_rename_finish(MDS *m, MDRequestRef& r,
 		      CDentry *sdn, CDentry *ddn, CDentry *stdn) :
     mds(m), mdr(r),
     srcdn(sdn), destdn(ddn), straydn(stdn) { }
@@ -5426,7 +5426,7 @@ public:
  *
  * This function takes responsibility for the passed mdr.
  */
-void Server::handle_client_rename(MDRequest *mdr)
+void Server::handle_client_rename(MDRequestRef& mdr)
 {
   MClientRequest *req = mdr->client_request;
   dout(7) << "handle_client_rename " << *req << dendl;
@@ -5855,7 +5855,7 @@ void Server::handle_client_rename(MDRequest *mdr)
 }
 
 
-void Server::_rename_finish(MDRequest *mdr, CDentry *srcdn, CDentry *destdn, CDentry *straydn)
+void Server::_rename_finish(MDRequestRef& mdr, CDentry *srcdn, CDentry *destdn, CDentry *straydn)
 {
   dout(10) << "_rename_finish " << *mdr << dendl;
 
@@ -5901,7 +5901,7 @@ void Server::_rename_finish(MDRequest *mdr, CDentry *srcdn, CDentry *destdn, CDe
 
 // helpers
 
-bool Server::_rename_prepare_witness(MDRequest *mdr, int who, set<int> &witnesse,
+bool Server::_rename_prepare_witness(MDRequestRef& mdr, int who, set<int> &witnesse,
 				     CDentry *srcdn, CDentry *destdn, CDentry *straydn)
 {
   if (!mds->mdsmap->is_clientreplay_or_active_or_stopping(who)) {
@@ -5931,7 +5931,7 @@ bool Server::_rename_prepare_witness(MDRequest *mdr, int who, set<int> &witnesse
   return true;
 }
 
-version_t Server::_rename_prepare_import(MDRequest *mdr, CDentry *srcdn, bufferlist *client_map_bl)
+version_t Server::_rename_prepare_import(MDRequestRef& mdr, CDentry *srcdn, bufferlist *client_map_bl)
 {
   version_t oldpv = mdr->more()->inode_import_v;
 
@@ -6001,7 +6001,7 @@ bool Server::_need_force_journal(CInode *diri, bool empty)
   return force_journal;
 }
 
-void Server::_rename_prepare(MDRequest *mdr,
+void Server::_rename_prepare(MDRequestRef& mdr,
 			     EMetaBlob *metablob, bufferlist *client_map_bl,
 			     CDentry *srcdn, CDentry *destdn, CDentry *straydn)
 {
@@ -6287,7 +6287,7 @@ void Server::_rename_prepare(MDRequest *mdr,
 }
 
 
-void Server::_rename_apply(MDRequest *mdr, CDentry *srcdn, CDentry *destdn, CDentry *straydn)
+void Server::_rename_apply(MDRequestRef& mdr, CDentry *srcdn, CDentry *destdn, CDentry *straydn)
 {
   dout(10) << "_rename_apply " << *mdr << " " << *srcdn << " " << *destdn << dendl;
   dout(10) << " pvs " << mdr->more()->pvmap << dendl;
@@ -6432,10 +6432,10 @@ void Server::_rename_apply(MDRequest *mdr, CDentry *srcdn, CDentry *destdn, CDen
 
 class C_MDS_SlaveRenamePrep : public Context {
   Server *server;
-  MDRequest *mdr;
+  MDRequestRef mdr;
   CDentry *srcdn, *destdn, *straydn;
 public:
-  C_MDS_SlaveRenamePrep(Server *s, MDRequest *m, CDentry *sr, CDentry *de, CDentry *st) :
+  C_MDS_SlaveRenamePrep(Server *s, MDRequestRef& m, CDentry *sr, CDentry *de, CDentry *st) :
     server(s), mdr(m), srcdn(sr), destdn(de), straydn(st) {}
   void finish(int r) {
     server->_logged_slave_rename(mdr, srcdn, destdn, straydn);
@@ -6444,10 +6444,10 @@ public:
 
 class C_MDS_SlaveRenameCommit : public Context {
   Server *server;
-  MDRequest *mdr;
+  MDRequestRef mdr;
   CDentry *srcdn, *destdn, *straydn;
 public:
-  C_MDS_SlaveRenameCommit(Server *s, MDRequest *m, CDentry *sr, CDentry *de, CDentry *st) :
+  C_MDS_SlaveRenameCommit(Server *s, MDRequestRef& m, CDentry *sr, CDentry *de, CDentry *st) :
     server(s), mdr(m), srcdn(sr), destdn(de), straydn(st) {}
   void finish(int r) {
     server->_commit_slave_rename(mdr, r, srcdn, destdn, straydn);
@@ -6456,9 +6456,9 @@ public:
 
 class C_MDS_SlaveRenameSessionsFlushed : public Context {
   Server *server;
-  MDRequest *mdr;
+  MDRequestRef mdr;
 public:
-  C_MDS_SlaveRenameSessionsFlushed(Server *s, MDRequest *r) :
+  C_MDS_SlaveRenameSessionsFlushed(Server *s, MDRequestRef& r) :
     server(s), mdr(r) {
       mdr->get();
     }
@@ -6469,7 +6469,7 @@ public:
 };
 
 /* This function DOES put the mdr->slave_request before returning*/
-void Server::handle_slave_rename_prep(MDRequest *mdr)
+void Server::handle_slave_rename_prep(MDRequestRef& mdr)
 {
   dout(10) << "handle_slave_rename_prep " << *mdr 
 	   << " " << mdr->slave_request->srcdnpath 
@@ -6663,7 +6663,7 @@ void Server::handle_slave_rename_prep(MDRequest *mdr)
   mdlog->flush();
 }
 
-void Server::_logged_slave_rename(MDRequest *mdr, 
+void Server::_logged_slave_rename(MDRequestRef& mdr,
 				  CDentry *srcdn, CDentry *destdn, CDentry *straydn)
 {
   dout(10) << "_logged_slave_rename " << *mdr << dendl;
@@ -6726,7 +6726,7 @@ void Server::_logged_slave_rename(MDRequest *mdr,
   mdr->straydn = 0;
 }
 
-void Server::_commit_slave_rename(MDRequest *mdr, int r,
+void Server::_commit_slave_rename(MDRequestRef& mdr, int r,
 				  CDentry *srcdn, CDentry *destdn, CDentry *straydn)
 {
   dout(10) << "_commit_slave_rename " << *mdr << " r=" << r << dendl;
@@ -6851,13 +6851,13 @@ void _rollback_repair_dir(Mutation *mut, CDir *dir, rename_rollback::drec &r, ut
 struct C_MDS_LoggedRenameRollback : public Context {
   Server *server;
   Mutation *mut;
-  MDRequest *mdr;
+  MDRequestRef mdr;
   CDentry *srcdn;
   version_t srcdnpv;
   CDentry *destdn;
   CDentry *straydn;
   bool finish_mdr;
-  C_MDS_LoggedRenameRollback(Server *s, Mutation *m, MDRequest *r,
+  C_MDS_LoggedRenameRollback(Server *s, Mutation *m, MDRequestRef& r,
 			     CDentry *sd, version_t pv, CDentry *dd,
 			    CDentry *st, bool f) :
     server(s), mut(m), mdr(r), srcdn(sd), srcdnpv(pv), destdn(dd),
@@ -6868,7 +6868,7 @@ struct C_MDS_LoggedRenameRollback : public Context {
   }
 };
 
-void Server::do_rename_rollback(bufferlist &rbl, int master, MDRequest *mdr,
+void Server::do_rename_rollback(bufferlist &rbl, int master, MDRequestRef& mdr,
 				bool finish_mdr)
 {
   rename_rollback rollback;
@@ -7073,7 +7073,7 @@ void Server::do_rename_rollback(bufferlist &rbl, int master, MDRequest *mdr,
   mdlog->flush();
 }
 
-void Server::_rename_rollback_finish(Mutation *mut, MDRequest *mdr, CDentry *srcdn,
+void Server::_rename_rollback_finish(Mutation *mut, MDRequestRef& mdr, CDentry *srcdn,
 				     version_t srcdnpv, CDentry *destdn,
 				     CDentry *straydn, bool finish_mdr)
 {
@@ -7144,7 +7144,7 @@ void Server::_rename_rollback_finish(Mutation *mut, MDRequest *mdr, CDentry *src
 }
 
 /* This function DOES put the passed message before returning*/
-void Server::handle_slave_rename_prep_ack(MDRequest *mdr, MMDSSlaveRequest *ack)
+void Server::handle_slave_rename_prep_ack(MDRequestRef& mdr, MMDSSlaveRequest *ack)
 {
   dout(10) << "handle_slave_rename_prep_ack " << *mdr 
 	   << " witnessed by " << ack->get_source()
@@ -7181,7 +7181,7 @@ void Server::handle_slave_rename_prep_ack(MDRequest *mdr, MMDSSlaveRequest *ack)
     dout(10) << "still waiting on slaves " << mdr->more()->waiting_on_slave << dendl;
 }
 
-void Server::handle_slave_rename_notify_ack(MDRequest *mdr, MMDSSlaveRequest *ack)
+void Server::handle_slave_rename_notify_ack(MDRequestRef& mdr, MMDSSlaveRequest *ack)
 {
   dout(10) << "handle_slave_rename_notify_ack " << *mdr << " from mds."
 	   << ack->get_source() << dendl;
@@ -7200,7 +7200,7 @@ void Server::handle_slave_rename_notify_ack(MDRequest *mdr, MMDSSlaveRequest *ac
   }
 }
 
-void Server::_slave_rename_sessions_flushed(MDRequest *mdr)
+void Server::_slave_rename_sessions_flushed(MDRequestRef& mdr)
 {
   dout(10) << "_slave_rename_sessions_flushed " << *mdr << dendl;
 
@@ -7218,7 +7218,7 @@ void Server::_slave_rename_sessions_flushed(MDRequest *mdr)
 
 // snaps
 /* This function takes responsibility for the passed mdr*/
-void Server::handle_client_lssnap(MDRequest *mdr)
+void Server::handle_client_lssnap(MDRequestRef& mdr)
 {
   MClientRequest *req = mdr->client_request;
 
@@ -7283,10 +7283,10 @@ void Server::handle_client_lssnap(MDRequest *mdr)
 
 struct C_MDS_mksnap_finish : public Context {
   MDS *mds;
-  MDRequest *mdr;
+  MDRequestRef mdr;
   CInode *diri;
   SnapInfo info;
-  C_MDS_mksnap_finish(MDS *m, MDRequest *r, CInode *di, SnapInfo &i) :
+  C_MDS_mksnap_finish(MDS *m, MDRequestRef& r, CInode *di, SnapInfo &i) :
     mds(m), mdr(r), diri(di), info(i) {}
   void finish(int r) {
     mds->server->_mksnap_finish(mdr, diri, info);
@@ -7294,7 +7294,7 @@ struct C_MDS_mksnap_finish : public Context {
 };
 
 /* This function takes responsibility for the passed mdr*/
-void Server::handle_client_mksnap(MDRequest *mdr)
+void Server::handle_client_mksnap(MDRequestRef& mdr)
 {
   if (!mds->mdsmap->allows_snaps()) {
     // you can't make snapshots until you set an option right now
@@ -7409,7 +7409,7 @@ void Server::handle_client_mksnap(MDRequest *mdr)
   mdlog->flush();
 }
 
-void Server::_mksnap_finish(MDRequest *mdr, CInode *diri, SnapInfo &info)
+void Server::_mksnap_finish(MDRequestRef& mdr, CInode *diri, SnapInfo &info)
 {
   dout(10) << "_mksnap_finish " << *mdr << " " << info << dendl;
 
@@ -7438,10 +7438,10 @@ void Server::_mksnap_finish(MDRequest *mdr, CInode *diri, SnapInfo &info)
 
 struct C_MDS_rmsnap_finish : public Context {
   MDS *mds;
-  MDRequest *mdr;
+  MDRequestRef mdr;
   CInode *diri;
   snapid_t snapid;
-  C_MDS_rmsnap_finish(MDS *m, MDRequest *r, CInode *di, snapid_t sn) :
+  C_MDS_rmsnap_finish(MDS *m, MDRequestRef& r, CInode *di, snapid_t sn) :
     mds(m), mdr(r), diri(di), snapid(sn) {}
   void finish(int r) {
     mds->server->_rmsnap_finish(mdr, diri, snapid);
@@ -7449,7 +7449,7 @@ struct C_MDS_rmsnap_finish : public Context {
 };
 
 /* This function takes responsibility for the passed mdr*/
-void Server::handle_client_rmsnap(MDRequest *mdr)
+void Server::handle_client_rmsnap(MDRequestRef& mdr)
 {
   MClientRequest *req = mdr->client_request;
 
@@ -7527,7 +7527,7 @@ void Server::handle_client_rmsnap(MDRequest *mdr)
   mdlog->flush();
 }
 
-void Server::_rmsnap_finish(MDRequest *mdr, CInode *diri, snapid_t snapid)
+void Server::_rmsnap_finish(MDRequestRef& mdr, CInode *diri, snapid_t snapid)
 {
   dout(10) << "_rmsnap_finish " << *mdr << " " << snapid << dendl;
   snapid_t stid = mdr->more()->stid;
