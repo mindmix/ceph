@@ -8814,7 +8814,7 @@ MDRequestRef MDCache::request_start(MClientRequest *req)
       dout(10) << "request_start already processing " << *mdr << ", dropping new msg" << dendl;
       req->put();
     }
-    return 0;
+    return MDRequestRef();
   }
 
   // register new client request
