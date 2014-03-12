@@ -90,8 +90,8 @@ public:
 		     CInode *auth_pin_freeze=NULL,
 		     bool auth_pin_nonblock=false);
 
-  void cancel_locking(MutationRef& mut, set<CInode*> *pneed_issue);
-  void drop_locks(MutationRef& mut, set<CInode*> *pneed_issue=0);
+  void cancel_locking(MutationRef mut, set<CInode*> *pneed_issue);
+  void drop_locks(MutationRef mut, set<CInode*> *pneed_issue=0);
   void set_xlocks_done(MutationRef& mut, bool skip_dentry=false);
   void drop_non_rdlocks(MutationRef& mut, set<CInode*> *pneed_issue=0);
   void drop_rdlocks(MutationRef& mut, set<CInode*> *pneed_issue=0);
@@ -128,21 +128,21 @@ public:
   bool _rdlock_kick(SimpleLock *lock, bool as_anon);
   bool rdlock_try(SimpleLock *lock, client_t client, Context *c);
   bool rdlock_start(SimpleLock *lock, MDRequestRef& mut, bool as_anon=false);
-  void rdlock_finish(SimpleLock *lock, MutationRef& mut, bool *pneed_issue);
+  void rdlock_finish(SimpleLock *lock, MutationRef mut, bool *pneed_issue);
   bool can_rdlock_set(set<SimpleLock*>& locks);
   bool rdlock_try_set(set<SimpleLock*>& locks);
   void rdlock_take_set(set<SimpleLock*>& locks, MutationRef& mut);
 
   void wrlock_force(SimpleLock *lock, MutationRef& mut);
   bool wrlock_start(SimpleLock *lock, MDRequestRef& mut, bool nowait=false);
-  void wrlock_finish(SimpleLock *lock, MutationRef& mut, bool *pneed_issue);
+  void wrlock_finish(SimpleLock *lock, MutationRef mut, bool *pneed_issue);
 
   void remote_wrlock_start(SimpleLock *lock, int target, MDRequestRef& mut);
-  void remote_wrlock_finish(SimpleLock *lock, int target, MutationRef& mut);
+  void remote_wrlock_finish(SimpleLock *lock, int target, MutationRef mut);
 
   bool xlock_start(SimpleLock *lock, MDRequestRef& mut);
   void _finish_xlock(SimpleLock *lock, client_t xlocker, bool *pneed_issue);
-  void xlock_finish(SimpleLock *lock, MutationRef& mut, bool *pneed_issue);
+  void xlock_finish(SimpleLock *lock, MutationRef mut, bool *pneed_issue);
 
   void xlock_export(SimpleLock *lock, MutationRef& mut);
   void xlock_import(SimpleLock *lock, MutationRef& mut);
