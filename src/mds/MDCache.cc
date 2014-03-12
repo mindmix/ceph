@@ -3127,15 +3127,16 @@ void MDCache::handle_resolve_ack(MMDSResolveAck *ack)
 
       // perform rollback (and journal a rollback entry)
       // note: this will hold up the resolve a bit, until the rollback entries journal.
+      MDRequestRef null_ref;
       switch (su->origop) {
       case ESlaveUpdate::LINK:
-	mds->server->do_link_rollback(su->rollback, from, 0);
+	mds->server->do_link_rollback(su->rollback, from, null_ref);
 	break;
       case ESlaveUpdate::RENAME:
-	mds->server->do_rename_rollback(su->rollback, from, 0);
+	mds->server->do_rename_rollback(su->rollback, from, null_ref);
 	break;
       case ESlaveUpdate::RMDIR:
-	mds->server->do_rmdir_rollback(su->rollback, from, 0);
+	mds->server->do_rmdir_rollback(su->rollback, from, null_ref);
 	break;
       default:
 	assert(0);
