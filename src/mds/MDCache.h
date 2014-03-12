@@ -68,6 +68,7 @@ class ESubtreeMap;
 
 struct Mutation;
 struct MDRequestImpl;
+typedef ceph::shared_ptr<MDRequestImpl> MDRequestRef;
 struct MDSlaveUpdate;
 
 
