@@ -38,7 +38,9 @@ inline const char *get_lock_type_name(int t) {
   }
 }
 
-struct Mutation;
+#include "include/memory.h"
+struct MutationImpl;
+typedef ceph::shared_ptr<MutationImpl> MutationRef;
 
 extern "C" {
 #include "locks.h"
