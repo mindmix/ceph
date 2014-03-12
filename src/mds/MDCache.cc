@@ -8750,7 +8750,8 @@ void MDCache::handle_find_ino_reply(MMDSFindInoReply *m)
     if (!m->path.empty()) {
       // we got a path!
       vector<CDentry*> trace;
-      int r = path_traverse(NULL, m, NULL, m->path, &trace, NULL, MDS_TRAVERSE_DISCOVER);
+      MDRequestRef null_ref;
+      int r = path_traverse(null_ref, m, NULL, m->path, &trace, NULL, MDS_TRAVERSE_DISCOVER);
       if (r > 0)
 	return; 
       dout(0) << "handle_find_ino_reply failed with " << r << " on " << m->path 
@@ -10724,7 +10725,8 @@ void MDCache::handle_dir_update(MDirUpdate *m)
       CInode *in;
       filepath path = m->get_path();
       dout(5) << "trying discover on dir_update for " << path << dendl;
-      int r = path_traverse(NULL, m, NULL, path, &trace, &in, MDS_TRAVERSE_DISCOVER);
+      MDRequestRef null_ref;
+      int r = path_traverse(null_ref, m, NULL, path, &trace, &in, MDS_TRAVERSE_DISCOVER);
       if (r > 0)
         return;
       assert(r == 0);
