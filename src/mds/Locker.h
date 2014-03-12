@@ -29,8 +29,6 @@ class Session;
 class CDir;
 class CInode;
 class CDentry;
-struct Mutation;
-struct MDRequest;
 class EMetaBlob;
 struct SnapRealm;
 
