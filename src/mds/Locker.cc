@@ -2537,7 +2537,8 @@ public:
     locker(l), client(c), item(it) { }
   void finish(int r) {
     string dname;
-    locker->process_request_cap_release(NULL, client, item, dname);
+    MDRequestRef null_ref;
+    locker->process_request_cap_release(null_ref, client, item, dname);
   }
 };
 
