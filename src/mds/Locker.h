@@ -144,8 +144,8 @@ public:
   void _finish_xlock(SimpleLock *lock, client_t xlocker, bool *pneed_issue);
   void xlock_finish(SimpleLock *lock, MutationRef mut, bool *pneed_issue);
 
-  void xlock_export(SimpleLock *lock, MutationRef& mut);
-  void xlock_import(SimpleLock *lock, MutationRef& mut);
+  void xlock_export(SimpleLock *lock, MutationRef mut);
+  void xlock_import(SimpleLock *lock, MutationRef mut);
 
 
   // simple

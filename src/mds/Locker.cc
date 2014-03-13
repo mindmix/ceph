@@ -1578,7 +1578,7 @@ void Locker::xlock_finish(SimpleLock *lock, MutationRef mut, bool *pneed_issue)
   }
 }
 
-void Locker::xlock_export(SimpleLock *lock, MutationRef& mut)
+void Locker::xlock_export(SimpleLock *lock, MutationRef mut)
 {
   dout(10) << "xlock_export on " << *lock << " " << *lock->get_parent() << dendl;
 
@@ -1595,7 +1595,7 @@ void Locker::xlock_export(SimpleLock *lock, MutationRef& mut)
   lock->set_state(LOCK_LOCK);
 }
 
-void Locker::xlock_import(SimpleLock *lock, MutationRef& mut)
+void Locker::xlock_import(SimpleLock *lock, MutationRef mut)
 {
   dout(10) << "xlock_import on " << *lock << " " << *lock->get_parent() << dendl;
   lock->get_parent()->auth_pin(lock);
