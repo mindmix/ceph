@@ -510,7 +510,7 @@ bool Locker::acquire_locks(MDRequestRef& mdr,
 }
 
 
-void Locker::set_xlocks_done(MutationRef& mut, bool skip_dentry)
+void Locker::set_xlocks_done(MutationRef mut, bool skip_dentry)
 {
   for (set<SimpleLock*>::iterator p = mut->xlocks.begin();
        p != mut->xlocks.end();
@@ -631,7 +631,7 @@ void Locker::drop_non_rdlocks(MutationRef mut, set<CInode*> *pneed_issue)
     issue_caps_set(*pneed_issue);
 }
 
-void Locker::drop_rdlocks(MutationRef& mut, set<CInode*> *pneed_issue)
+void Locker::drop_rdlocks(MutationRef mut, set<CInode*> *pneed_issue)
 {
   set<CInode*> my_need_issue;
   if (!pneed_issue)
