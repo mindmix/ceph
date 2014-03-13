@@ -939,6 +939,9 @@ void PG::calc_ec_acting(
   vector<int> want(size, CRUSH_ITEM_NONE);
   map<shard_id_t, set<pg_shard_t> > all_info_by_shard;
   unsigned usable = 0;
+  eversion_t min_last_update = MIN(
+    auth_log_shard->second.log_tail,
+    all_info.find(acting_primary)->second.log_tail);
   for(map<pg_shard_t, pg_info_t>::const_iterator i = all_info.begin();
       i != all_info.end();
       ++i) {
@@ -949,7 +952,7 @@ void PG::calc_ec_acting(
     if (up.size() > (unsigned)i && up[i] != CRUSH_ITEM_NONE &&
 	!all_info.find(pg_shard_t(up[i], i))->second.is_incomplete() &&
 	all_info.find(pg_shard_t(up[i], i))->second.last_update >=
-	auth_log_shard->second.log_tail) {
+        min_last_update) {
       ss << " selecting up[i]: " << pg_shard_t(up[i], i) << std::endl;
       want[i] = up[i];
       ++usable;
@@ -964,7 +967,7 @@ void PG::calc_ec_acting(
     if (acting.size() > (unsigned)i && acting[i] != CRUSH_ITEM_NONE &&
 	!all_info.find(pg_shard_t(acting[i], i))->second.is_incomplete() &&
 	all_info.find(pg_shard_t(acting[i], i))->second.last_update >=
-	auth_log_shard->second.log_tail) {
+        min_last_update) {
       ss << " selecting acting[i]: " << pg_shard_t(acting[i], i) << std::endl;
       want[i] = acting[i];
       ++usable;
@@ -975,7 +978,7 @@ void PG::calc_ec_acting(
 	assert(j->shard == i);
 	if (!all_info.find(*j)->second.is_incomplete() &&
 	    all_info.find(*j)->second.last_update >=
-	    auth_log_shard->second.log_tail) {
+	    min_last_update) {
 	  ss << " selecting stray: " << *j << std::endl;
 	  want[i] = j->osd;
 	  ++usable;
