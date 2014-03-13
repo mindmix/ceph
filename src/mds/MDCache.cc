@@ -1591,7 +1591,7 @@ void MDCache::journal_cow_inode(MutationRef& mut, EMetaBlob *metablob,
   journal_cow_dentry(mut, metablob, dn, follows, pcow_inode);
 }
 
-void MDCache::journal_dirty_inode(MutationRef& mut, EMetaBlob *metablob, CInode *in, snapid_t follows)
+void MDCache::journal_dirty_inode(MutationRef mut, EMetaBlob *metablob, CInode *in, snapid_t follows)
 {
   if (in->is_base()) {
     metablob->add_root(true, in, in->get_projected_inode());
