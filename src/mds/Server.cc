@@ -6462,12 +6462,9 @@ class C_MDS_SlaveRenameSessionsFlushed : public Context {
   MDRequestRef mdr;
 public:
   C_MDS_SlaveRenameSessionsFlushed(Server *s, MDRequestRef& r) :
-    server(s), mdr(r) {
-      mdr->get();
-    }
+    server(s), mdr(r) {}
   void finish(int r) {
     server->_slave_rename_sessions_flushed(mdr);
-    mdr->put();
   }
 };
 
