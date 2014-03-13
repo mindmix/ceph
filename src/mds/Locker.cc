@@ -619,7 +619,7 @@ void Locker::drop_locks(MutationRef mut, set<CInode*> *pneed_issue)
   mut->done_locking = false;
 }
 
-void Locker::drop_non_rdlocks(MutationRef& mut, set<CInode*> *pneed_issue)
+void Locker::drop_non_rdlocks(MutationRef mut, set<CInode*> *pneed_issue)
 {
   set<CInode*> my_need_issue;
   if (!pneed_issue)
