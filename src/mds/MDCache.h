@@ -266,7 +266,7 @@ public:
   // journal/snap helpers
   CInode *pick_inode_snap(CInode *in, snapid_t follows);
   CInode *cow_inode(CInode *in, snapid_t last);
-  void journal_cow_dentry(MutationRef& mut, EMetaBlob *metablob, CDentry *dn,
+  void journal_cow_dentry(MutationRef mut, EMetaBlob *metablob, CDentry *dn,
                           snapid_t follows=CEPH_NOSNAP,
 			  CInode **pcow_inode=0, CDentry::linkage_t *dnl=0);
   void journal_cow_inode(MutationRef& mut, EMetaBlob *metablob, CInode *in, snapid_t follows=CEPH_NOSNAP,
@@ -279,7 +279,7 @@ public:
   void project_rstat_frag_to_inode(nest_info_t& rstat, nest_info_t& accounted_rstat,
 				   snapid_t ofirst, snapid_t last, 
 				   CInode *pin, bool cow_head);
-  void predirty_journal_parents(MutationRef& mut, EMetaBlob *blob,
+  void predirty_journal_parents(MutationRef mut, EMetaBlob *blob,
 				CInode *in, CDir *parent,
 				int flags, int linkunlink=0,
 				snapid_t follows=CEPH_NOSNAP);
