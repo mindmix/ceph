@@ -2686,7 +2686,7 @@ void MDCache::handle_mds_failure(int who)
 	if (amdr->slave_request)
 	  amdr->aborted = true;
 	else
-	  finish.push_back(amdr.lock());
+	  finish.push_back(amdr);
       }
     }
 
