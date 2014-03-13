@@ -2015,8 +2015,8 @@ void MDCache::predirty_journal_parents(MutationRef& mut, EMetaBlob *blob,
 	(!pin->versionlock.can_wrlock() ||                   // make sure we can take versionlock, too
 	 //true
 	 !mds->locker->wrlock_start(&pin->nestlock,
-				    ceph::static_pointer_cast<MutationImpl,MDRequestImpl>(mut),
-				    true) // can cast only because i'm passing nowait=true
+				    ceph::static_pointer_cast<MDRequestImpl,MutationImpl>(mut),  // can cast only because i'm passing nowait=true
+				    true)
 	 )) {  // ** do not initiate.. see above comment **
       dout(10) << "predirty_journal_parents can't wrlock one of " << pin->versionlock << " or " << pin->nestlock
 	       << " on " << *pin << dendl;
